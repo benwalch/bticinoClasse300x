@@ -1,29 +1,29 @@
-# Informe de Depuración SIP - Sesión 2026-03-24
+# SIP Debugging Report - Session 2026-03-24
 
-**Objetivo**: Identificar causa raíz del fallo de registro SIP con flexisip local  
-**Estado**: ⚠️ **SIN RESOLVER** - Se requiere más investigación
-
----
-
-## 📋 Resumen de Depuración
-
-Se realizaron **24 pruebas** para identificar por qué el bridge no se registra con flexisip local.
-
-### Hallazgos Principales:
-
-1. ✅ **flexisip está corriendo** y escuchando en puertos 5060 (TCP) y 5061 (TLS)
-2. ✅ **Conectividad de red** verificada (puertos abiertos)
-3. ✅ **Configuración de authentication** correcta (trusted-hosts, hashed-passwords)
-4. ✅ **Usuarios existen** en users.db.txt (4 usuarios, incluyendo baresip)
-5. ❌ **El bridge reporta `i/o timeout`** al enviar REGISTER
-6. ❌ **flexisip no responde** al REGISTER del bridge
-7. ❌ **El proceso del bridge se cae** después de iniciar (posible panic)
+**Goal**: identify the root cause of the SIP registration failure with local flexisip  
+**Status**: ⚠️ **UNRESOLVED** - More research required
 
 ---
 
-## 🔍 Pruebas Realizadas
+## 📋 Debug Summary
 
-### Pruebas 1-2: Conectividad de Red
+**24 tests** were run to identify why the bridge doesn't register with local flexisip.
+
+### Key Findings:
+
+1. ✅ **flexisip is running** and listening on ports 5060 (TCP) and 5061 (TLS)
+2. ✅ **Network connectivity** verified (open ports)
+3. ✅ **Authentication configuration** correct (trusted-hosts, hashed-passwords)
+4. ✅ **Users exist** in users.db.txt (4 users, including baresip)
+5. ❌ **The bridge reports `i/o timeout`** when sending REGISTER
+6. ❌ **flexisip doesn't answer** the bridge's REGISTER
+7. ❌ **The bridge process crashes** after starting (possible panic)
+
+---
+
+## 🔍 Tests Performed
+
+### Tests 1-2: Network Connectivity
 ```bash
 # Puertos SIP escuchando (5060=0x13C4, 5061=0x13C5):
 0100007F:13C4 (127.0.0.1:5060) - ✅ LISTENING
@@ -31,11 +31,11 @@ Se realizaron **24 pruebas** para identificar por qué el bridge no se registra 
 2601A8C0:13C5 (192.168.1.38:5061) - ✅ LISTENING
 ```
 
-**Resultado**: ✅ Puertos abiertos correctamente
+**Result**: ✅ ports open correctly
 
 ---
 
-### Pruebas 3-4: Logs Debug Habilitados
+### Tests 3-4: Debug Logs Enabled
 ```ini
 # flexisip.conf
 log-level=debug
@@ -45,11 +45,11 @@ syslog-level=debug
 log_level: debug
 ```
 
-**Resultado**: ✅ Logs detallados habilitados en ambos servicios
+**Result**: ✅ detailed logs enabled on both services
 
 ---
 
-### Pruebas 5-10: Configuración de Authentication
+### Tests 5-10: Authentication Configuration
 ```ini
 # /etc/flexisip/flexisip.conf
 [module::Authentication]
@@ -62,20 +62,20 @@ hashed-passwords=true
 reject-wrong-client-certificates=false
 ```
 
-**Usuarios disponibles**:
+**Available users**:
 ```
 baresip@1754162.bs.iotleg.com md5:2db500964b556d4cef79284738f2a360
 baresip_test@1754162.bs.iotleg.com plain:test123 (agregado en prueba 12)
 ```
 
-**Resultado**: ✅ Configuración correcta
+**Result**: ✅ correct configuration
 
 ---
 
-### Pruebas 11-14: Prueba con Password Plano
-Se agregó usuario `baresip_test` con password plano `test123` para descartar problemas de hash MD5.
+### Tests 11-14: Plain-Password Test
+A `baresip_test` user with plain password `test123` was added to rule out MD5 hash problems.
 
-**Configuración usada**:
+**Configuration used**:
 ```yaml
 sip:
   username: baresip_test@1754162.bs.iotleg.com
@@ -83,145 +83,145 @@ sip:
   use_ha1: false
 ```
 
-**Error obtenido**:
+**Error obtained**:
 ```
 failed to register: failed to read REGISTER response: 
 read tcp 192.168.1.38:34174->192.168.1.38:5060: i/o timeout
 ```
 
-**Resultado**: ❌ Mismo error - no es problema del hash
+**Result**: ❌ same error - not a hash problem
 
 ---
 
-### Pruebas 15-17: Verificación de Proceso Bridge
-Se descubrió que el proceso viejo (PID 17923, iniciado Mar23) seguía corriendo.
+### Tests 15-17: Bridge Process Check
+The old process (PID 17923, started Mar23) was found still running.
 
-**Acción**: Se mató el proceso viejo y se inició uno nuevo.
+**Action**: the old process was killed and a new one started.
 
-**Resultado**: ⚠️ El nuevo proceso se cae después de iniciar
+**Result**: ⚠️ the new process crashes after starting
 
 ---
 
-### Pruebas 18-24: Análisis de Caída del Bridge
-El bridge inicia correctamente pero se cae silenciosamente después de ~30 segundos.
+### Tests 18-24: Bridge Crash Analysis
+The bridge starts correctly but crashes silently after ~30 seconds.
 
-**Últimos logs antes de caer**:
+**Last logs before crashing**:
 ```
 INFO[2026-03-24T10:12:13+01:00] HomeKit bridge created successfully
 INFO[2026-03-24T10:12:13+01:00] HomeKit bridge started successfully
 ```
 
-**No hay logs de**:
+**There are no logs of**:
 - ❌ "Starting BTicino SIP client"
-- ❌ Errores fatales o panic
-- ❌ Mensaje de shutdown
+- ❌ fatal errors or panic
+- ❌ shutdown message
 
-**Resultado**: ❌ El proceso desaparece sin dejar rastro
+**Result**: ❌ the process disappears without a trace
 
 ---
 
-## 🐛 Problemas Identificados
+## 🐛 Identified Problems
 
-### Problema 1: `i/o timeout` en Registro SIP
+### Problem 1: `i/o timeout` on SIP Registration
 
-**Síntoma**:
+**Symptom**:
 ```
 failed to register: failed to read REGISTER response: 
 read tcp 192.168.1.38:34174->192.168.1.38:5060: i/o timeout
 ```
 
-**Posibles causas**:
-1. flexisip no está procesando REGISTERs entrantes
-2. El REGISTER se envía a una IP/puerto incorrecto
-3. Firewall interno bloquea la conexión
-4. flexisip requiere parámetros adicionales en REGISTER
+**Possible causes**:
+1. flexisip isn't processing incoming REGISTERs
+2. The REGISTER is sent to a wrong IP/port
+3. Internal firewall blocks the connection
+4. flexisip requires additional REGISTER parameters
 
-**Evidencia**:
-- flexisip está escuchando en 5060
-- No hay logs en flexisip de REGISTER recibido
-- El timeout es de ~10 segundos (default TCP)
+**Evidence**:
+- flexisip is listening on 5060
+- No flexisip logs of REGISTER received
+- The timeout is ~10 seconds (TCP default)
 
 ---
 
-### Problema 2: Proceso Bridge Se Cae Silenciosamente
+### Problem 2: Bridge Process Crashes Silently
 
-**Síntoma**:
-- Proceso inicia normalmente
-- Logs se detienen abruptamente
-- No hay mensaje de error o panic
-- Proceso desaparece de `ps aux`
+**Symptom**:
+- Process starts normally
+- Logs stop abruptly
+- No error or panic message
+- Process disappears from `ps aux`
 
-**Posibles causas**:
-1. Panic en Go no capturado
-2. Segfault en código C (si hay CGO)
+**Possible causes**:
+1. Uncaught Go panic
+2. Segfault in C code (if any CGO)
 3. Out of memory (OOM killer)
-4. Señal externa (kill)
+4. External signal (kill)
 
-**Evidencia**:
-- No hay logs de "fatal" o "panic"
-- No hay core dump generado
-- Memoria disponible: ~425 MB (suficiente)
+**Evidence**:
+- No "fatal" or "panic" logs
+- No core dump generated
+- Available memory: ~425 MB (enough)
 
 ---
 
-## 📊 Estado Actual
+## 📊 Current Status
 
-| Componente | Estado | Notas |
+| Component | Status | Notes |
 |------------|--------|-------|
-| **flexisip** | ✅ Corriendo | PID 11415, 11416 |
-| **Puertos SIP** | ✅ Escuchando | 5060, 5061 |
-| **Configuración** | ✅ Correcta | Auth, usuarios, dominios |
-| **Bridge** | ❌ Caído | Se cae después de ~30s |
-| **Registro SIP** | ❌ Fallido | i/o timeout |
-| **Logs flexisip** | ❌ Vacíos | No muestra REGISTERs |
+| **flexisip** | ✅ Running | PID 11415, 11416 |
+| **SIP ports** | ✅ Listening | 5060, 5061 |
+| **Configuration** | ✅ Correct | Auth, users, domains |
+| **Bridge** | ❌ Crashed | Crashes after ~30s |
+| **SIP registration** | ❌ Failed | i/o timeout |
+| **flexisip logs** | ❌ Empty | Shows no REGISTERs |
 
 ---
 
-## 🔧 Próximos Pasos Recomendados
+## 🔧 Recommended Next Steps
 
-### 1. Verificar si flexisip recibe REGISTERs
+### 1. Check whether flexisip receives REGISTERs
 
 ```bash
-# En el dispositivo, con tcpdump si está disponible:
+# On the device, with tcpdump if available:
 tcpdump -i lo -n port 5060 -X
 
-# O usar strace en flexisip:
+# Or use strace on flexisip:
 strace -p <PID_flexisip> -e trace=network
 ```
 
-### 2. Ejecutar bridge en foreground para ver panic
+### 2. Run the bridge in foreground to see the panic
 
 ```bash
 cd /home/bticino/cfg/extra
 ./bticino_bridge -config config_streaming.yaml
-# Observar salida estándar para panic
+# Watch stdout for panics
 ```
 
-### 3. Verificar OOM killer
+### 3. Check OOM killer
 
 ```bash
 dmesg | grep -i 'out of memory\|killed process'
 cat /proc/meminfo | grep -i 'memavailable'
 ```
 
-### 4. Probar cliente SIP alternativo
+### 4. Try an alternative SIP client
 
 ```bash
-# Usar sipsak o pjsua para testear registro:
+# Use sipsak or pjsua to test registration:
 sipsak -s sip:baresip@1754162.bs.iotleg.com -u baresip -p test123 -P tcp
 ```
 
-### 5. Habilitar logs más detallados en flexisip
+### 5. Enable more detailed flexisip logs
 
 ```ini
-# Agregar a flexisip.conf
+# Add to flexisip.conf
 [module::SipAg]
 log-level=9
 ```
 
 ---
 
-## 📁 Archivos de Configuración Actuales
+## 📁 Current Configuration Files
 
 ### /etc/flexisip/flexisip.conf
 ```ini
@@ -254,18 +254,18 @@ sip:
 
 ---
 
-## 📝 Conclusiones
+## 📝 Conclusions
 
-1. **flexisip está configurado correctamente** pero no responde a REGISTERs
-2. **El bridge tiene un bug** que causa caída silenciosa después de iniciar
-3. **Se requiere depuración a nivel de red** (tcpdump) para ver si REGISTER sale del bridge
-4. **Se necesita ejecutar bridge en foreground** para capturar panic
+1. **flexisip is configured correctly** but doesn't answer REGISTERs
+2. **The bridge has a bug** causing a silent crash after starting
+3. **Network-level debugging (tcpdump) is required** to see whether REGISTER leaves the bridge
+4. **The bridge needs to run in foreground** to capture the panic
 
-**Próxima sesión**: Ejecutar bridge en foreground + tcpdump para capturar tráfico SIP
+**Next session**: run bridge in foreground + tcpdump to capture SIP traffic
 
 ---
 
-**Fecha**: 2026-03-24  
-**Pruebas realizadas**: 24  
-**Estado**: ⏸️ Pendiente de más depuración  
-**Prioridad**: Media (streaming es feature opcional)
+**Date**: 2026-03-24  
+**Tests run**: 24  
+**Status**: ⏸️ Pending further debugging  
+**Priority**: Medium (streaming is an optional feature)

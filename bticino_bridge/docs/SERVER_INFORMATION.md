@@ -1,37 +1,37 @@
 # BTicino Classe 300X - Server Information & Network Requirements
 
-**Fecha**: 2026-03-24  
-**Fuente**: Manual de instalación y configuración oficial  
-**Estado**: ✅ Verificado - Información oficial
+**Date**: 2026-03-24  
+**Source**: official installation and configuration manual  
+**Status**: ✅ Verified - Official information
 
 ---
 
-## 📋 Resumen de Servidores
+## 📋 Server Summary
 
-| Servicio | Server/Domain | Puerto | Protocolo | Estado | Uso |
+| Service | Server/Domain | Port | Protocol | Status | Use |
 |----------|--------------|--------|-----------|--------|-----|
-| **Cloud Principal** | `nv2-bncx.netatmo.net` | 25050 | TCP | ✅ Oficial | Comunicación con cloud Netatmo |
-| **NTP** | `pool.ntp.org` | 123 | NTP | ⚙️ Configurable | Sincronización de tiempo |
-| **Logs** | `log.bs.iotleg.com` | 5001 | Syslog | ✅ Oficial | Envío de logs remotos |
-| **Actualizaciones** | `n3tfw.blob.core.windows.net` | 443 | HTTPS | ✅ Oficial | Descarga de firmware/updates |
-| **Email** | Depende del usuario | Variable | SMTP/IMAP | ⚙️ Configurable | Notificaciones por email |
+| **Main Cloud** | `nv2-bncx.netatmo.net` | 25050 | TCP | ✅ Official | Netatmo cloud communication |
+| **NTP** | `pool.ntp.org` | 123 | NTP | ⚙️ Configurable | Time synchronization |
+| **Logs** | `log.bs.iotleg.com` | 5001 | Syslog | ✅ Official | Remote log shipping |
+| **Updates** | `n3tfw.blob.core.windows.net` | 443 | HTTPS | ✅ Official | Firmware/update downloads |
+| **Email** | Depends on user | Variable | SMTP/IMAP | ⚙️ Configurable | Email notifications |
 
 ---
 
-## 🔍 Análisis de Servidores
+## 🔍 Server Analysis
 
-### 1. **Servicio Cloud - nv2-bncx.netatmo.net:25050/tcp**
+### 1. **Cloud Service - nv2-bncx.netatmo.net:25050/tcp**
 
-**Propósito**: Comunicación principal con la nube de Netatmo
+**Purpose**: main communication with the Netatmo cloud
 
-**Implicaciones para bticino_bridge**:
-- ⚠️ **IMPORTANTE**: El servidor cloud cambió de `iotleg.com` a `netatmo.net`
-- 🔄 El bridge debe poder comunicarse con este servidor si quiere emular el dispositivo oficial
-- 🔒 Puerto 25050 TCP debe estar abierto hacia internet (outbound)
+**Implications for bticino_bridge**:
+- ⚠️ **IMPORTANT**: the cloud server changed from `iotleg.com` to `netatmo.net`
+- 🔄 The bridge must be able to reach this server if it wants to emulate the official device
+- 🔒 TCP port 25050 must be open toward the internet (outbound)
 
-**Configuración sugerida para el bridge**:
+**Suggested configuration for the bridge**:
 ```yaml
-# Futura configuración en web dashboard
+# Future configuration in web dashboard
 cloud:
   enabled: false  # Por defecto deshabilitado (privacy)
   server: nv2-bncx.netatmo.net
@@ -39,27 +39,27 @@ cloud:
   protocol: tcp
 ```
 
-**Nota**: Netatmo adquirió BTicino, por eso el cambio de dominio.
+**Note**: Netatmo acquired BTicino, hence the domain change.
 
 ---
 
-### 2. **Servicio NTP - pool.ntp.org:123/ntp**
+### 2. **NTP Service - pool.ntp.org:123/ntp**
 
-**Propósito**: Sincronización de reloj del sistema
+**Purpose**: system clock synchronization
 
-**Estado**: Predefinido, modificable por usuario
+**Status**: preset, user-modifiable
 
-**Implicaciones para bticino_bridge**:
-- ✅ El bridge ya usa NTP del sistema operativo
-- 🕐 Importante para logs, timestamps de mensajes, certificados TLS
+**Implications for bticino_bridge**:
+- ✅ The bridge already uses the OS NTP
+- 🕐 Important for logs, message timestamps, TLS certificates
 
-**Configuración actual del dispositivo**:
+**Current device configuration**:
 ```bash
 # En el BTicino real
 ntpd -p pool.ntp.org
 ```
 
-**Recomendación**: Asegurar que el sistema tenga NTP configurado:
+**Recommendation**: ensure the system has NTP configured:
 ```bash
 # En Linux host
 timedatectl set-ntp true
@@ -67,18 +67,18 @@ timedatectl set-ntp true
 
 ---
 
-### 3. **Servicio Logs - log.bs.iotleg.com:5001/syslog**
+### 3. **Logs Service - log.bs.iotleg.com:5001/syslog**
 
-**Propósito**: Envío de logs telemetría a BTicino
+**Purpose**: shipping telemetry logs to BTicino
 
-**Implicaciones para bticino_bridge**:
-- ⚠️ **IMPORTANTE**: Este dominio sigue activo (`iotleg.com`)
-- 📊 El dispositivo envía logs automáticamente
-- 🔒 El bridge puede interceptar/bloquear este tráfico para privacy
+**Implications for bticino_bridge**:
+- ⚠️ **IMPORTANT**: this domain is still active (`iotleg.com`)
+- 📊 The device ships logs automatically
+- 🔒 The bridge can intercept/block this traffic for privacy
 
-**Configuración sugerida**:
+**Suggested configuration**:
 ```yaml
-# Bloquear envío de logs a BTicino (privacy)
+# Block log uploads to BTicino (privacy)
 privacy:
   block_telemetry: true
   block_log_server: true
@@ -91,49 +91,49 @@ logging:
   protocol: udp
 ```
 
-**Nota**: `iotleg.com` parece ser el dominio legacy que coexiste con `netatmo.net`.
+**Note**: `iotleg.com` looks like the legacy domain coexisting with `netatmo.net`.
 
 ---
 
-### 4. **Servicio Actualizaciones - n3tfw.blob.core.windows.net:443/https**
+### 4. **Updates Service - n3tfw.blob.core.windows.net:443/https**
 
-**Propósito**: Descarga de firmware y actualizaciones
+**Purpose**: firmware and update downloads
 
-**Implicaciones para bticino_bridge**:
-- ⚠️ **IMPORTANTE**: Azure Blob Storage (Microsoft)
-- 🔄 El dispositivo verifica actualizaciones periódicamente
-- 🔒 HTTPS (puerto 443) debe estar abierto outbound
+**Implications for bticino_bridge**:
+- ⚠️ **IMPORTANT**: Azure Blob Storage (Microsoft)
+- 🔄 The device checks for updates periodically
+- 🔒 HTTPS (port 443) must be open outbound
 
-**Configuración sugerida**:
+**Suggested configuration**:
 ```yaml
-# Deshabilitar actualizaciones automáticas (el bridge maneja updates)
+# Disable automatic updates (the bridge handles updates)
 updates:
   auto_check: false
   auto_download: false
   
-# O usar proxy local
+# Or use local proxy
 updates:
   proxy_enabled: true
   proxy_url: http://localhost:8080/updates
 ```
 
-**Nota**: Usar Azure Blob Storage sugiere que Netatmo usa infraestructura Microsoft.
+**Note**: using Azure Blob Storage suggests Netatmo runs on Microsoft infrastructure.
 
 ---
 
-### 5. **Servicio Email - Configurable por usuario**
+### 5. **Email Service - User configurable**
 
-**Propósito**: Notificaciones por email (doorbell, alarmas, etc.)
+**Purpose**: email notifications (doorbell, alarms, etc.)
 
-**Implicaciones para bticino_bridge**:
-- ✅ El bridge puede implementar su propio servicio de notificaciones
-- 📧 MQTT + Home Assistant ya provee notificaciones
-- 📱 Alternativa: notificaciones push vía API (Telegram, Pushover, etc.)
+**Implications for bticino_bridge**:
+- ✅ The bridge can implement its own notification service
+- 📧 MQTT + Home Assistant already provides notifications
+- 📱 Alternative: push notifications via API (Telegram, Pushover, etc.)
 
-**Configuración sugerida para el bridge**:
+**Suggested configuration for the bridge**:
 ```yaml
 notifications:
-  # Opción 1: Email (si se requiere)
+  # Option 1: Email (if required)
   email:
     enabled: false
     smtp_server: smtp.gmail.com
@@ -141,12 +141,12 @@ notifications:
     username: user@gmail.com
     password: "***"
     
-  # Opción 2: MQTT (recomendado)
+  # Option 2: MQTT (recommended)
   mqtt:
     enabled: true
     topic: bticino/notifications
     
-  # Opción 3: Push notifications
+  # Option 3: Push notifications
   pushover:
     enabled: false
     api_key: "***"
@@ -155,25 +155,25 @@ notifications:
 
 ---
 
-## 🔐 Consideraciones de Seguridad
+## 🔐 Security Considerations
 
 ### Firewalls Required (Outbound)
 
-| Destino | Puerto | Protocolo | Prioridad |
+| Destination | Port | Protocol | Priority |
 |---------|--------|-----------|-----------|
-| `nv2-bncx.netatmo.net` | 25050 | TCP | ⚠️ Media (si se usa cloud) |
-| `pool.ntp.org` | 123 | UDP/NTP | ✅ Alta (time sync) |
-| `log.bs.iotleg.com` | 5001 | UDP/TCP | ⚠️ Baja (telemetría, opcional) |
-| `n3tfw.blob.core.windows.net` | 443 | TCP/HTTPS | ⚠️ Media (updates) |
+| `nv2-bncx.netatmo.net` | 25050 | TCP | ⚠️ Medium (if cloud is used) |
+| `pool.ntp.org` | 123 | UDP/NTP | ✅ High (time sync) |
+| `log.bs.iotleg.com` | 5001 | UDP/TCP | ⚠️ Low (telemetry, optional) |
+| `n3tfw.blob.core.windows.net` | 443 | TCP/HTTPS | ⚠️ Medium (updates) |
 
-### Recomendación: Firewall Mínimo
+### Recommendation: Minimal Firewall
 
 ```bash
 # Permitir solo lo esencial
 # NTP (tiempo)
 iptables -A OUTPUT -p udp --dport 123 -d pool.ntp.org -j ACCEPT
 
-# Bloquear telemetría a BTicino (privacy)
+# Block telemetry to BTicino (privacy)
 iptables -A OUTPUT -p udp --dport 5001 -d log.bs.iotleg.com -j DROP
 
 # Bloquear cloud de Netatmo (si no se usa)
@@ -185,9 +185,9 @@ iptables -A OUTPUT -p tcp --dport 443 -d n3tfw.blob.core.windows.net -j ACCEPT
 
 ---
 
-## 📊 Impacto en bticino_bridge
+## 📊 Impact on bticino_bridge
 
-### **Configuración Actual (v0.12.0)**
+### **Current Configuration (v0.12.0)**
 
 ```yaml
 # config_streaming.yaml actual
@@ -196,14 +196,14 @@ sip:
   server_port: 5060
 ```
 
-**Estado**: ✅ No se ve afectado - usa servidor local
+**Status**: ✅ unaffected - uses local server
 
 ---
 
-### **Configuración Futura (v0.13.0+)**
+### **Future Configuration (v0.13.0+)**
 
 ```yaml
-# Nueva sección de servidores
+# New servers section
 servers:
   # Cloud Netatmo (opcional, privacy-first por defecto)
   cloud:
@@ -212,7 +212,7 @@ servers:
     port: 25050
     protocol: tcp
     
-  # NTP (usar sistema operativo)
+  # NTP (use operating system)
   ntp:
     enabled: true
     host: pool.ntp.org
@@ -240,33 +240,33 @@ servers:
 
 ---
 
-## 🎯 Recomendaciones de Implementación
+## 🎯 Implementation Recommendations
 
-### **Prioridad 1: Documentación** ✅
-- [x] Crear este documento
-- [ ] Actualizar README con información de servidores
-- [ ] Agregar sección de network requirements
+### **Priority 1: Documentation** ✅
+- [x] Create this document
+- [ ] Update README with server information
+- [ ] Add network requirements section
 
-### **Prioridad 2: Configuración** ⏳
-- [ ] Agregar sección `servers` a config.yaml
-- [ ] Valores por defecto privacy-first (todo deshabilitado menos NTP)
-- [ ] Documentar cada servidor en comentarios
+### **Priority 2: Configuration** ⏳
+- [ ] Add `servers` section to config.yaml
+- [ ] Privacy-first defaults (everything disabled except NTP)
+- [ ] Document each server in comments
 
-### **Prioridad 3: Firewall** ⏳
-- [ ] Script opcional para configurar iptables
-- [ ] Documentar puertos requeridos
-- [ ] Warn sobre telemetría a BTicino
+### **Priority 3: Firewall** ⏳
+- [ ] Optional script to configure iptables
+- [ ] Document required ports
+- [ ] Warn about telemetry to BTicino
 
-### **Prioridad 4: UI Web** ⏳ (v0.13.0)
+### **Priority 4: Web UI** ⏳ (v0.13.0)
 - [ ] Settings page → Network/Servers tab
-- [ ] Toggle para cada servidor
-- [ ] Mostrar tráfico de red por servidor
+- [ ] Toggle per server
+- [ ] Show network traffic per server
 
 ---
 
-## 📝 Notas Importantes
+## 📝 Important Notes
 
-### **Cambio de Dominios: BTicino → Netatmo**
+### **Domain Change: BTicino → Netatmo**
 
 ```
 2015-2020: BTicino independiente
@@ -278,40 +278,40 @@ servers:
   - Updates en Azure: n3tfw.blob.core.windows.net
 ```
 
-**Implicación**: El bridge debe soportar ambos dominios para compatibilidad con dispositivos legacy.
+**Implication**: the bridge must support both domains for compatibility with legacy devices.
 
 ---
 
-### **Coexistencia de Dominios**
+### **Domain Coexistence**
 
-| Dominio | Estado | Uso |
+| Domain | Status | Use |
 |---------|--------|-----|
-| `iotleg.com` | ✅ Activo (legacy) | SIP, logs |
-| `netatmo.net` | ✅ Activo (nuevo) | Cloud principal |
-| `bs.iotleg.com` | ✅ Activo | SIP server |
-| `windows.net` | ✅ Activo | Azure blob storage |
+| `iotleg.com` | ✅ Active (legacy) | SIP, logs |
+| `netatmo.net` | ✅ Active (new) | Main cloud |
+| `bs.iotleg.com` | ✅ Active | SIP server |
+| `windows.net` | ✅ Active | Azure blob storage |
 
 ---
 
-## 🔍 Investigación Pendiente
+## 🔍 Pending Research
 
-- [ ] ¿El cloud `nv2-bncx.netatmo.net` requiere autenticación?
-- [ ] ¿Qué protocolo usa el puerto 25050? (¿HTTP, WebSocket, custom?)
-- [ ] ¿Se puede interceptar/emular el tráfico cloud?
-- [ ] ¿El dispositivo funciona SIN conexión a internet? (debería ser sí)
-- [ ] ¿Hay más servidores involucrados?
-
----
-
-## 📁 Referencias
-
-- **Fuente**: Manual de instalación y configuración oficial BTicino
-- **Sección**: "Servicios y Puertos de Red"
-- **Fecha del manual**: 2024-2025 (estimado)
-- **Versión del dispositivo**: C300X-00-03-50-a8-a7-52-1754162
+- [ ] Does the `nv2-bncx.netatmo.net` cloud require authentication?
+- [ ] What protocol does port 25050 use? (HTTP, WebSocket, custom?)
+- [ ] Can the cloud traffic be intercepted/emulated?
+- [ ] Does the device work WITHOUT internet? (it should)
+- [ ] Are more servers involved?
 
 ---
 
-**Última actualización**: 2026-03-24  
-**Próxima revisión**: Después de testing de conectividad  
-**Estado**: ✅ Información oficial verificada
+## 📁 References
+
+- **Source**: official BTicino installation and configuration manual
+- **Section**: "Network Services and Ports"
+- **Manual date**: 2024-2025 (estimated)
+- **Device version**: C300X-00-03-50-a8-a7-52-1754162
+
+---
+
+**Last updated**: 2026-03-24  
+**Next review**: after connectivity testing  
+**Status**: ✅ verified official information

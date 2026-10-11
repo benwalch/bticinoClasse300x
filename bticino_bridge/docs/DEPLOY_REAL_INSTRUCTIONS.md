@@ -1,58 +1,58 @@
-# Deploy Real - Instrucciones Paso a Paso
+# Real Deploy - Step-by-Step Instructions
 
-> ⚠️ **SUPERSEDED (histórico, v0.12.0).** El despliegue vigente es
-> `deploy-standard.sh` (raíz del repo) / `make deploy` — ver **[DEPLOY.md](DEPLOY.md)**.
-> Este documento se basa en `scripts/deploy_auto.sh` y arranque manual, ya
-> reemplazados por `start-bridge.sh` (que también arranca go2rtc). Se conserva
-> como referencia. Binario: `bticino_bridge` (guion bajo).
+> ⚠️ **SUPERSEDED (historical, v0.12.0).** The current deployment is
+> `deploy-standard.sh` (repo root) / `make deploy` — see **[DEPLOY.md](DEPLOY.md)**.
+> This document is based on `scripts/deploy_auto.sh` and manual startup, already
+> replaced by `start-bridge.sh` (which also starts go2rtc). Kept
+> for reference. Binary: `bticino_bridge` (underscore).
 
-**Fecha**: 2026-03-23  
-**Dispositivo**: BTicino Classe 300X (192.168.1.38)  
-**Versión**: v0.12.0 con WebRTC/RTSP
+**Date**: 2026-03-23  
+**Device**: BTicino Classe 300X (192.168.1.38)  
+**Version**: v0.12.0 with WebRTC/RTSP
 
 ---
 
-## ⚠️ PRE-REQUISITOS
+## ⚠️ PREREQUISITES
 
-### 1. Aceptar Host Key del Dispositivo
+### 1. Accept the Device Host Key
 
-El dispositivo puede tener una host key diferente. Ejecutá:
+The device may have a different host key. Run:
 
 ```bash
 ssh-keygen -f '/home/fquinto/.ssh/known_hosts' -R '192.168.1.38'
 ```
 
-Luego conectate manualmente para aceptar la nueva key:
+Then connect manually to accept the new key:
 
 ```bash
 ssh root@192.168.1.38
-# Cuando pregunte "Are you sure you want to continue connecting (yes/no/[fingerprint])?"
-# Escribí: yes
+# When it asks "Are you sure you want to continue connecting (yes/no/[fingerprint])?"
+# I typed: yes
 ```
 
-Si pide password, necesitás configurarlo. Si tenés la password, podés copiar la key:
+If it asks for a password, you need to set it up. If you have the password, you can copy the key:
 
 ```bash
-# Si tenés password del dispositivo:
+# If you have the device password:
 ssh-copy-id root@192.168.1.38
 # (te va a pedir password una vez)
 ```
 
 ---
 
-## 📋 PASOS DE DEPLOY MANUAL
+## 📋 MANUAL DEPLOY STEPS
 
-### Paso 1: Verificar conexión SSH
+### Step 1: Verify SSH connection
 
 ```bash
 ssh root@192.168.1.38 "echo 'SSH OK'"
 ```
 
-**Esperado**: `SSH OK`
+**Expected**: `SSH OK`
 
 ---
 
-### Paso 2: Remount filesystem como read-write
+### Step 2: Remount filesystem as read-write
 
 ```bash
 ssh root@192.168.1.38 "mount -o remount,rw /"
@@ -60,7 +60,7 @@ ssh root@192.168.1.38 "mount -o remount,rw /"
 
 ---
 
-### Paso 3: Crear directorio de recordings
+### Step 3: Create recordings directory
 
 ```bash
 ssh root@192.168.1.38 "mkdir -p /home/bticino/cfg/extra/recordings && chmod 755 /home/bticino/cfg/extra/recordings"
@@ -68,9 +68,9 @@ ssh root@192.168.1.38 "mkdir -p /home/bticino/cfg/extra/recordings && chmod 755 
 
 ---
 
-### Paso 4: Transferir binario (MÉTODO BASE64)
+### Step 4: Transfer binary (BASE64 METHOD)
 
-#### 4.1: Codificar binario en tu máquina de desarrollo
+#### 4.1: Encode the binary on your development machine
 
 ```bash
 cd /home/fquinto/DATOS/USB_Security/Seguridad/Dispositivos/Videoportero_classe300_interfono_bticino/bticino_bridge
@@ -78,14 +78,14 @@ cd /home/fquinto/DATOS/USB_Security/Seguridad/Dispositivos/Videoportero_classe30
 # Codificar a base64
 base64 bticino_bridge > /tmp/bticino_bridge.base64
 
-# Verificar tamaño
+# Check size
 wc -l /tmp/bticino_bridge.base64
-# Esperado: ~256000 líneas
+# Expected: ~256000 lines
 ```
 
-#### 4.2: Transferir base64 al dispositivo
+#### 4.2: Transfer base64 to the device
 
-**Opción A: Si scp funciona con las opciones especiales**
+**Option A: If scp works with the special options**
 
 ```bash
 scp -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa \
@@ -93,44 +93,44 @@ scp -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa \
     root@192.168.1.38:/home/bticino/cfg/extra/
 ```
 
-**Opción B: Si scp NO funciona (más probable)**
+**Option B: If scp does NOT work (most likely)**
 
-Usá este script que hace la transferencia automáticamente:
+Use this script, which transfers automatically:
 
 ```bash
 cd /home/fquinto/DATOS/USB_Security/Seguridad/Dispositivos/Videoportero_classe300_interfono_bticino/bticino_bridge
 
-# El script divide el archivo en chunks de 2MB y los transfiere uno por uno
+# The script splits the file into 2MB chunks and transfers them one by one
 ./scripts/deploy_auto.sh
 ```
 
-El script va a:
-1. Dividir el base64 en 10 chunks de 2MB
-2. Transferir cada chunk vía SSH
-3. Ensamblar y decodificar en el dispositivo
-4. Verificar el binario
+The script will:
+1. Split the base64 into 10 2MB chunks
+2. Transfer each chunk via SSH
+3. Assemble and decode on the device
+4. Verify the binary
 
-**Tiempo estimado**: 3-5 minutos
+**Estimated time**: 3-5 minutes
 
 ---
 
-### Paso 5: Verificar binario transferido
+### Step 5: Verify transferred binary
 
 ```bash
 ssh root@192.168.1.38 "ls -lh /home/bticino/cfg/extra/bticino_bridge"
 ```
 
-**Esperado**: `-rwxr-xr-x ... 14M ... bticino_bridge`
+**Expected**: `-rwxr-xr-x ... 14M ... bticino_bridge`
 
 ---
 
-### Paso 6: Verificar versión del binario
+### Step 6: Check binary version
 
 ```bash
 ssh root@192.168.1.38 "/home/bticino/cfg/extra/bticino_bridge -version"
 ```
 
-**Esperado**:
+**Expected**:
 ```
 BTicino Classe 300X ENHANCED MEGA Bridge v0.12.0
 🚀 ENHANCED UNIFIED BRIDGE - Real Device Integration:
@@ -141,19 +141,19 @@ BTicino Classe 300X ENHANCED MEGA Bridge v0.12.0
 
 ---
 
-### Paso 7: Crear configuración
+### Step 7: Create configuration
 
 ```bash
 ssh root@192.168.1.38
 cd /home/bticino/cfg/extra
 
-# Copiar ejemplo
+# Copy example
 cp configs/config-streaming-example.yaml config.yaml
 
-# Editar configuración (nano o vi si están disponibles)
+# Edit configuration (nano or vi if available)
 nano config.yaml
 
-# Si nano no está disponible, usá el método echo:
+# If nano is not available, use the echo method:
 cat > config.yaml << 'EOF'
 bridge:
   name: "BTicino Bridge Enhanced"
@@ -193,11 +193,11 @@ streaming:
 EOF
 ```
 
-**IMPORTANTE**: Reemplazá `TU_USERNAME_AQUI` y `TU_PASSWORD_AQUI` con tus credenciales SIP reales.
+**IMPORTANT**: replace `TU_USERNAME_AQUI` and `TU_PASSWORD_AQUI` with your real SIP credentials.
 
 ---
 
-### Paso 8: Probar configuración
+### Step 8: Test the configuration
 
 ```bash
 ssh root@192.168.1.38
@@ -207,34 +207,34 @@ cd /home/bticino/cfg/extra
 ./bticino_bridge -config config.yaml -test
 ```
 
-**Esperado**: Mensajes de configuración cargada sin errores críticos.
+**Expected**: configuration-loaded messages with no critical errors.
 
 ---
 
-### Paso 9: Iniciar servicio manualmente
+### Step 9: Start the service manually
 
 ```bash
 ssh root@192.168.1.38
 cd /home/bticino/cfg/extra
 
-# Iniciar en background
+# Start in background
 nohup ./bticino_bridge -config config.yaml > /var/log/bticino_bridge.log 2>&1 &
 
-# Verificar que está corriendo
+# Check that it is running
 ps aux | grep bticino_bridge | grep -v grep
 ```
 
-**Esperado**: Proceso `./bticino_bridge -config config.yaml` en la lista.
+**Expected**: `./bticino_bridge -config config.yaml` process in the list.
 
 ---
 
-### Paso 10: Verificar logs
+### Step 10: Check logs
 
 ```bash
 ssh root@192.168.1.38 "tail -50 /var/log/bticino_bridge.log"
 ```
 
-**Esperado** (buscar estas líneas):
+**Expected** (look for these lines):
 ```
 ✅ SIP: Client started successfully
 ✅ RTSP: Enhanced server started on port 6554
@@ -247,18 +247,18 @@ ssh root@192.168.1.38 "tail -50 /var/log/bticino_bridge.log"
 
 ---
 
-### Paso 11: Testear API Web
+### Step 11: Test the Web API
 
 ```bash
-# Desde tu máquina de desarrollo
+# From your dev machine
 curl http://192.168.1.38:8082/api/status
 ```
 
-**Esperado**: JSON con versión, uptime, componentes.
+**Expected**: JSON with version, uptime, components.
 
 ---
 
-### Paso 12: Testear streaming RTSP
+### Step 12: Test RTSP streaming
 
 ```bash
 # Con ffplay
@@ -267,43 +267,43 @@ ffplay -f rtsp -i rtsp://192.168.1.38:6554/doorbell
 # Con VLC
 vlc rtsp://192.168.1.38:6554/doorbell
 
-# Con go2rtc (si tenés configurado)
-# Verificar logs de go2rtc
+# With go2rtc (if you have it configured)
+# Check go2rtc logs
 ```
 
-**Nota**: El stream puede tardar ~10-20 segundos en iniciar porque el dispositivo necesita establecer la llamada SIP.
+**Note**: the stream may take ~10-20 seconds to start because the device needs to establish the SIP call.
 
 ---
 
-### Paso 13: Testear grabación (HKSV)
+### Step 13: Test recording (HKSV)
 
 ```bash
-# Iniciar grabación vía API
+# Start recording via API
 curl -X POST http://192.168.1.38:8082/api/streaming/record \
   -H "Content-Type: application/json" \
   -d '{"duration": 10}'
 
 # Esperar 10 segundos...
 
-# Verificar archivo de grabación
+# Check recording file
 ssh root@192.168.1.38 "ls -lh /home/bticino/cfg/extra/recordings/"
 ```
 
-**Esperado**: Archivo `.ts` nuevo con timestamp.
+**Expected**: new timestamped `.ts` file.
 
 ---
 
 ## 🔧 TROUBLESHOOTING
 
-### Problema: SSH pide password constantemente
+### Problem: SSH keeps asking for password
 
-**Solución**: Configurar SSH key-based auth
+**Solution**: set up SSH key-based auth
 
 ```bash
-# En tu máquina de desarrollo
+# On your dev machine
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/bticino_key
 
-# Copiar key al dispositivo (si tenés password)
+# Copy key to the device (if you have the password)
 ssh-copy-id -o HostKeyAlgorithms=+ssh-rsa root@192.168.1.38
 
 # O manualmente (si no funciona ssh-copy-id)
@@ -312,50 +312,50 @@ cat ~/.ssh/bticino_key.pub | ssh root@192.168.1.38 "mkdir -p ~/.ssh && cat >> ~/
 
 ---
 
-### Problema: Binario no ejecuta
+### Problem: Binary won't run
 
 ```bash
 ssh root@192.168.1.38
 cd /home/bticino/cfg/extra
 
-# Verificar formato del binario
+# Check binary format
 file bticino_bridge
-# Esperado: ELF 32-bit LSB executable, ARM
+# Expected: ELF 32-bit LSB executable, ARM
 
-# Verificar permisos
+# Check permissions
 ls -l bticino_bridge
-# Esperado: -rwxr-xr-x
+# Expected: -rwxr-xr-x
 
 # Si no es ejecutable:
 chmod +x bticino_bridge
 
-# Intentar ejecutar con debug
+# Try running with debug
 ./bticino_bridge -log-level debug 2>&1 | head -20
 ```
 
 ---
 
-### Problema: Puerto 6554 ya en uso
+### Problem: Port 6554 already in use
 
 ```bash
 ssh root@192.168.1.38 "netstat -tlnp | grep 6554 || ss -tlnp | grep 6554"
 
-# Si hay otro proceso, matarlo
+# If another process is running, kill it
 ssh root@192.168.1.38 "fuser -k 6554/tcp 2>/dev/null || kill \$(lsof -t -i:6554) 2>/dev/null || echo 'Manual kill required'"
 ```
 
 ---
 
-### Problema: No hay video/audio en RTSP
+### Problem: No video/audio on RTSP
 
-1. **Verificar SIP registrado**:
+1. **Check SIP is registered**:
    ```bash
    curl http://192.168.1.38:8082/api/status | grep -i sip
    ```
 
-2. **Verificar credenciales SIP en config.yaml**
+2. **Check SIP credentials in config.yaml**
 
-3. **Probar llamada SIP manual**:
+3. **Try a manual SIP call**:
    ```bash
    ssh root@192.168.1.38
    cd /home/bticino/cfg/extra
@@ -365,47 +365,47 @@ ssh root@192.168.1.38 "fuser -k 6554/tcp 2>/dev/null || kill \$(lsof -t -i:6554)
 
 ---
 
-### Problema: Recording no funciona
+### Problem: Recording doesn't work
 
 ```bash
-# Verificar directorio existe y es writable
+# Check directory exists and is writable
 ssh root@192.168.1.38 "ls -ld /home/bticino/cfg/extra/recordings"
 ssh root@192.168.1.38 "touch /home/bticino/cfg/extra/recordings/test && rm /home/bticino/cfg/extra/recordings/test && echo 'Writable OK'"
 
-# Verificar config
+# Check config
 ssh root@192.168.1.38 "grep recording_path /home/bticino/cfg/extra/config.yaml"
 ```
 
 ---
 
-## 📊 CHECKLIST DE DEPLOY
+## 📊 DEPLOY CHECKLIST
 
-Marcar cada paso completado:
+Mark each completed step:
 
-- [ ] Host key aceptada
-- [ ] SSH sin password funciona
-- [ ] Filesystem remounted como RW
-- [ ] Directorio recordings creado
-- [ ] Binario transferido (base64)
-- [ ] Binario decodificado y verificado
-- [ ] Versión v0.12.0 confirmada
-- [ ] Configuración creada y editada
+- [ ] Host key accepted
+- [ ] Passwordless SSH works
+- [ ] Filesystem remounted as RW
+- [ ] Recordings directory created
+- [ ] Binary transferred (base64)
+- [ ] Binary decoded and verified
+- [ ] Version v0.12.0 confirmed
+- [ ] Configuration created and edited
 - [ ] Test mode passed
-- [ ] Servicio iniciado manualmente
-- [ ] Logs verificados (sin errores críticos)
-- [ ] API Web responde
-- [ ] RTSP stream funciona (ffplay/VLC)
-- [ ] Grabación funciona
+- [ ] Service started manually
+- [ ] Logs checked (no critical errors)
+- [ ] Web API responds
+- [ ] RTSP stream works (ffplay/VLC)
+- [ ] Recording works
 
 ---
 
-## 🔄 ROLLBACK (si algo sale mal)
+## 🔄 ROLLBACK (if something goes wrong)
 
 ```bash
 ssh root@192.168.1.38
 cd /home/bticino/cfg/extra
 
-# Detener proceso actual
+# Stop current process
 ps aux | grep bticino_bridge | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null || true
 
 # Restaurar backup (si existe)
@@ -422,12 +422,12 @@ if ls config.yaml.backup.* 1>/dev/null 2>&1; then
     echo "Config restored"
 fi
 
-# Reiniciar
+# Restart
 ./bticino_bridge -config config.yaml &
 ```
 
 ---
 
-**Última actualización**: 2026-03-23  
-**Estado**: Probado en laboratorio ✅  
-**Próximo**: Deploy en dispositivo real
+**Last updated**: 2026-03-23  
+**Status**: lab-tested ✅  
+**Next**: deploy on real device

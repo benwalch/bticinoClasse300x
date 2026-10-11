@@ -1,87 +1,87 @@
 # SIP Registration Debug Plan
 
-**Fecha**: 2026-03-25  
-**Estado**: ⏳ **PENDIENTE**  
-**Prioridad**: Media (bridge funcional sin SIP)
+**Date**: 2026-03-25  
+**Status**: ⏳ **PENDING**  
+**Priority**: Medium (bridge works without SIP)
 
 ---
 
-## 📋 Estado Actual
+## 📋 Current Status
 
-### **Lo Que Sabemos**:
+### **What We Know**:
 
-1. ✅ **Flexisip configurado** - Escuchando en 192.168.1.38:5060/5061
-2. ✅ **Usuario creado** - `bticino_bridge@1754162.bs.iotleg.com`
-3. ✅ **Ruta configurada** - `sip:127.0.0.1`
-4. ✅ **Timbre configurado** - En route_int.conf
-5. ❌ **Registro falla** - `i/o timeout` después de 10 segundos
-6. ❌ **Sin logs en flexisip** - No recibe REGISTER
-
----
-
-## 🎯 Objetivo
-
-Hacer que `bticino_bridge` se registre exitosamente con `flexisip` local para habilitar:
-- Streaming RTSP
-- Grabación HKSV
-- Llamadas salientes/entrantes
+1. ✅ **Flexisip configured** - Listening on 192.168.1.38:5060/5061
+2. ✅ **User created** - `bticino_bridge@1754162.bs.iotleg.com`
+3. ✅ **Route configured** - `sip:127.0.0.1`
+4. ✅ **Doorbell configured** - In route_int.conf
+5. ❌ **Registration fails** - `i/o timeout` after 10 seconds
+6. ❌ **No flexisip logs** - Receives no REGISTER
 
 ---
 
-## 🔍 Hipótesis
+## 🎯 Goal
 
-### **Hipótesis 1: Cliente SIP no envía REGISTER**
-**Probabilidad**: 30%  
-**Test**: Capturar tráfico de red con tcpdump
-
-### **Hipótesis 2: Flexisip no responde REGISTER**
-**Probabilidad**: 40%  
-**Test**: Logs detallados de flexisip (nivel 9)
-
-### **Hipótesis 3: Formato de username incorrecto**
-**Probabilidad**: 20%  
-**Test**: Probar con usuario existente (baresip)
-
-### **Hipótesis 4: Firewall interno bloquea**
-**Probabilidad**: 10%  
-**Test**: Verificar iptables rules
+Get `bticino_bridge` to register successfully with local `flexisip` to enable:
+- RTSP streaming
+- HKSV recording
+- Outgoing/incoming calls
 
 ---
 
-## 🧪 Plan de Testing
+## 🔍 Hypotheses
 
-### **Fase 1: Captura de Tráfico** ⏳
+### **Hypothesis 1: SIP client doesn't send REGISTER**
+**Probability**: 30%  
+**Test**: capture network traffic with tcpdump
 
-**Objetivo**: Verificar si REGISTER sale del bridge
+### **Hypothesis 2: Flexisip doesn't answer REGISTER**
+**Probability**: 40%  
+**Test**: detailed flexisip logs (level 9)
+
+### **Hypothesis 3: Wrong username format**
+**Probability**: 20%  
+**Test**: try with an existing user (baresip)
+
+### **Hypothesis 4: Internal firewall blocks**
+**Probability**: 10%  
+**Test**: check iptables rules
+
+---
+
+## 🧪 Testing Plan
+
+### **Phase 1: Traffic Capture** ⏳
+
+**Goal**: verify whether REGISTER leaves the bridge
 
 ```bash
-# En el dispositivo
+# On the device
 ssh bticino
 
-# Iniciar captura
+# Start capture
 tcpdump -i lo -n -s 0 -w /tmp/sip_register.pcap port 5060
 
-# En otra terminal, reiniciar bridge
+# In another terminal, restart bridge
 pkill -9 bticino_bridge
 cd /home/bticino/cfg/extra
 ./bticino_bridge -config config_streaming.yaml &
 
-# Detener captura después de 15 segundos
+# Stop capture after 15 seconds
 killall tcpdump
 
 # Analizar captura
 tcpdump -r /tmp/sip_register.pcap -X | head -100
 ```
 
-**Resultado Esperado**:
-- ✅ Debería mostrar `REGISTER sip:1754162.bs.iotleg.com SIP/2.0`
-- ❌ Si no muestra nada, el bridge no está enviando
+**Expected Result**:
+- ✅ Should show `REGISTER sip:1754162.bs.iotleg.com SIP/2.0`
+- ❌ If it shows nothing, the bridge isn't sending
 
 ---
 
-### **Fase 2: Logs Detallados de Flexisip** ⏳
+### **Phase 2: Detailed Flexisip Logs** ⏳
 
-**Objetivo**: Ver qué recibe flexisip
+**Goal**: see what flexisip receives
 
 ```bash
 # Editar flexisip.conf
@@ -103,22 +103,22 @@ trusted-hosts=127.0.0.1,192.168.1.38
 hashed-passwords=true
 EOF
 
-# Reiniciar flexisip
+# Restart flexisip
 /etc/init.d/flexisipsh restart
 
 # Monitorear logs
 tail -f /var/log/log_rotation.log | grep -i register
 ```
 
-**Resultado Esperado**:
-- ✅ Debería mostrar REGISTER recibido
-- ❌ Si no muestra, flexisip no recibe
+**Expected Result**:
+- ✅ Should show REGISTER received
+- ❌ If it shows nothing, flexisip isn't receiving
 
 ---
 
-### **Fase 3: Probar con Usuario Existente** ⏳
+### **Phase 3: Try with Existing User** ⏳
 
-**Objetivo**: Descartar problema de configuración
+**Goal**: rule out a configuration problem
 
 ```bash
 # Editar config del bridge
@@ -135,7 +135,7 @@ sip:
   use_ha1: true
 EOF
 
-# Reiniciar bridge
+# Restart bridge
 pkill -9 bticino_bridge
 cd /home/bticino/cfg/extra
 ./bticino_bridge -config config_test.yaml &
@@ -144,19 +144,19 @@ cd /home/bticino/cfg/extra
 tail -f /var/log/bticino_bridge.log | grep -i sip
 ```
 
-**Resultado Esperado**:
-- ✅ Si funciona con baresip → problema es configuración de bticino_bridge
-- ❌ Si falla igual → problema es cliente SIP del bridge
+**Expected Result**:
+- ✅ If it works with baresip → the problem is bticino_bridge's configuration
+- ❌ If it fails the same way → the problem is the bridge SIP client
 
 ---
 
-### **Fase 4: Test con Sipsak** ⏳
+### **Phase 4: Test with Sipsak** ⏳
 
-**Objetivo**: Testear registro con herramienta externa
+**Goal**: test registration with an external tool
 
 ```bash
-# Desde otra máquina (no el dispositivo)
-# Instalar sipsak
+# From another machine (not the device)
+# Install sipsak
 sudo apt-get install sipsak
 
 # Probar registro
@@ -168,19 +168,19 @@ sipsak -s sip:bticino_bridge@1754162.bs.iotleg.com \
        -v
 ```
 
-**Resultado Esperado**:
-- ✅ `SIP/2.0 200 OK` → Flexisip funciona
-- ❌ `SIP/2.0 403 Forbidden` → Problema de auth
-- ❌ Timeout → Flexisip no responde
+**Expected Result**:
+- ✅ `SIP/2.0 200 OK` → Flexisip works
+- ❌ `SIP/2.0 403 Forbidden` → Auth problem
+- ❌ Timeout → Flexisip isn't responding
 
 ---
 
-### **Fase 5: Debug del Código SIP** ⏳
+### **Phase 5: SIP Code Debug** ⏳
 
-**Objetivo**: Agregar logs al cliente SIP del bridge
+**Goal**: add logs to the bridge SIP client
 
 ```bash
-# En el código Go del bridge
+# In the bridge Go code
 # pkg/sip/client.go
 
 func (c *BTicinoSIPClient) register() error {
@@ -189,34 +189,34 @@ func (c *BTicinoSIPClient) register() error {
     c.logger.Debugf("Username: %s", c.config.Username)  # AGREGAR
     c.logger.Debugf("Domain: %s", c.config.Domain)  # AGREGAR
     
-    // ... resto del código
+    // ... rest of the code
 }
 ```
 
-**Compilar con logs**:
+**Compile with logs**:
 ```bash
 go build -tags debug -o bticino_bridge_debug ./cmd/main.go
 ```
 
 ---
 
-## 🔧 Soluciones Potenciales
+## 🔧 Potential Solutions
 
-### **Solución 1: Cambiar formato de username**
+### **Solution 1: Change username format**
 
 ```yaml
-# Opción A: Sin dominio en username
+# Option A: No domain in username
 sip:
   username: bticino_bridge
   domain: 1754162.bs.iotleg.com
 
-# Opción B: Con dominio completo
+# Option B: With full domain
 sip:
   username: bticino_bridge@1754162.bs.iotleg.com
   domain: 1754162.bs.iotleg.com
 ```
 
-### **Solución 2: Cambiar transporte**
+### **Solution 2: Change transport**
 
 ```yaml
 # Probar UDP en lugar de TCP
@@ -225,7 +225,7 @@ sip:
   server_port: 5060
 ```
 
-### **Solución 3: Deshabilitar hashed-passwords**
+### **Solution 3: Disable hashed-passwords**
 
 ```ini
 # En flexisip.conf
@@ -233,14 +233,14 @@ sip:
 hashed-passwords=false
 ```
 
-### **Solución 4: Agregar usuario sin hash**
+### **Solution 4: Add user without hash**
 
 ```bash
 # En users.db.txt
 bticino_bridge@1754162.bs.iotleg.com plain:password123 ;
 ```
 
-### **Solución 5: Usar IP en lugar de localhost**
+### **Solution 5: Use IP instead of localhost**
 
 ```yaml
 sip:
@@ -249,48 +249,48 @@ sip:
 
 ---
 
-## 📊 Timeline Estimado
+## 📊 Estimated Timeline
 
-| Fase | Duración | Prioridad |
+| Phase | Duration | Priority |
 |------|----------|-----------|
-| **Fase 1: Captura** | 30 min | 🔴 Alta |
-| **Fase 2: Logs Flexisip** | 30 min | 🔴 Alta |
-| **Fase 3: Usuario Existente** | 30 min | 🟡 Media |
-| **Fase 4: Sipsak** | 1 hora | 🟡 Media |
-| **Fase 5: Debug Código** | 2 horas | 🟢 Baja |
+| **Phase 1: Capture** | 30 min | 🔴 High |
+| **Phase 2: Flexisip logs** | 30 min | 🔴 High |
+| **Phase 3: Existing user** | 30 min | 🟡 Medium |
+| **Phase 4: Sipsak** | 1 hour | 🟡 Medium |
+| **Phase 5: Code debug** | 2 hours | 🟢 Low |
 
-**Total estimado**: 4-5 horas
+**Estimated total**: 4-5 hours
 
 ---
 
-## 🎯 Criterios de Éxito
+## 🎯 Success Criteria
 
-### **Registro Exitoso**:
+### **Successful Registration**:
 ```
 ✅ Logs muestran: "SIP registration successful"
 ✅ API muestra: "sip_registered": true
 ✅ Flexisip logs muestran: REGISTER 200 OK
-✅ No más errores de timeout
+✅ No more timeout errors
 ```
 
-### **Funcionalidad Habilitada**:
+### **Enabled Functionality**:
 ```
 ✅ RTSP streaming funciona
-✅ Grabación HKSV disponible
+✅ HKSV recording available
 ✅ Llamadas entrantes/salientes
 ```
 
 ---
 
-## 📁 Recursos Necesarios
+## 📁 Required Resources
 
-### **Herramientas**:
-- [x] tcpdump (o wireshark)
+### **Tools**:
+- [x] tcpdump (or wireshark)
 - [x] sipsak
-- [x] SSH al dispositivo
-- [x] Binario compilado v0.13.0
+- [x] SSH to the device
+- [x] Compiled v0.13.0 binary
 
-### **Accesos**:
+### **Access**:
 - [x] SSH: `ssh bticino`
 - [x] Web: `http://192.168.1.38:8082`
 - [x] Logs: `/var/log/bticino_bridge.log`
@@ -299,9 +299,9 @@ sip:
 
 ## 🔄 Plan B
 
-Si el registro SIP local no funciona después de debug:
+If local SIP registration still doesn't work after debugging:
 
-### **Opción A: Usar servidor SIP externo**
+### **Option A: Use external SIP server**
 ```yaml
 sip:
   server_host: sipserver.bs.iotleg.com
@@ -309,18 +309,18 @@ sip:
   transport: tls
 ```
 
-### **Opción B: Skip SIP por ahora**
-- Bridge funcional sin streaming
-- Enfocarse en otras features
-- Retornar a SIP después
+### **Option B: Skip SIP for now**
+- Working bridge without streaming
+- Focus on other features
+- Return to SIP later
 
-### **Opción C: Implementar cliente SIP alternativo**
-- Usar librería Go diferente
-- Pion SIP o similar
-- Más trabajo pero más control
+### **Option C: Implement alternative SIP client**
+- Use a different Go library
+- Pion SIP or similar
+- More work but more control
 
 ---
 
-**Próximo Paso**: Comenzar Fase 1 (captura de tráfico)  
-**Responsable**: Por definir  
-**Fecha Inicio**: Inmediata
+**Next Step**: start Phase 1 (traffic capture)  
+**Owner**: TBD  
+**Start Date**: Immediate

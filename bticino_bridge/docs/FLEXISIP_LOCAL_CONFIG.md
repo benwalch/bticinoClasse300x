@@ -1,16 +1,16 @@
 # Flexisip Local Configuration Guide
 
-**Fecha**: 2026-03-24  
-**Dispositivo**: BTicino Classe 300X (192.168.1.38)  
-**Estado**: ✅ **COMPLETADO Y VERIFICADO**
+**Date**: 2026-03-24  
+**Device**: BTicino Classe 300X (192.168.1.38)  
+**Status**: ✅ **COMPLETE AND VERIFIED**
 
 ---
 
-## 📋 Resumen de Configuración Aplicada
+## 📋 Applied Configuration Summary
 
-### **Servidores SIP Configurados**
+### **Configured SIP Servers**
 
-| Usuario | Dominio | Password (MD5) | Ruta | Timbre |
+| User | Domain | Password (MD5) | Route | Doorbell |
 |---------|---------|----------------|------|--------|
 | `baresip` | 1754162.bs.iotleg.com | `2db500964b556d4cef79284738f2a360` | `sip:192.168.1.38` | ✅ |
 | `baresip_test` | 1754162.bs.iotleg.com | `test123` (plain) | N/A | ❌ |
@@ -18,9 +18,9 @@
 
 ---
 
-## 🌐 Puertos de Escucha
+## 🌐 Listening Ports
 
-Flexisip ahora escucha en:
+Flexisip now listens on:
 
 ```
 ✅ sip:192.168.1.38:5060   (SIP TCP - red local)
@@ -28,20 +28,20 @@ Flexisip ahora escucha en:
 ✅ sips:192.168.1.38:5061  (SIP TLS - red local)
 ```
 
-**Verificación**:
+**Verification**:
 ```bash
 ps aux | grep flexisip
-# Debe mostrar:
+# Must show:
 # /usr/bin/flexisip --daemon --transports sip:192.168.1.38:5060;maddr=192.168.1.38 ...
 ```
 
 ---
 
-## 📁 Archivos Modificados
+## 📁 Modified Files
 
 ### 1. `/etc/flexisip/users/users.db.txt`
 
-**Contenido**:
+**Contents**:
 ```
 version:1
 fquinto-gmx.com-A06CE9ED-19B2-4EDB-8CBB-A4EEB4F93BD2@1754162.bs.iotleg.com md5:2db500964b556d4cef79284738f2a360 ;
@@ -52,13 +52,13 @@ baresip_test@1754162.bs.iotleg.com plain:test123 ;
 bticino_bridge@1754162.bs.iotleg.com md5:2db500964b556d4cef79284738f2a360 ;  # ← NUEVO
 ```
 
-**Hash MD5**: `2db500964b556d4cef79284738f2a360` (mismo para todos los usuarios locales)
+**MD5 Hash**: `2db500964b556d4cef79284738f2a360` (same for all local users)
 
 ---
 
 ### 2. `/etc/flexisip/users/route.conf`
 
-**Contenido**:
+**Contents**:
 ```
 <sip:alluser@1754162.bs.iotleg.com> <sip:fquinto-gmx.com-A06CE9ED-19B2-4EDB-8CBB-A4EEB4F93BD2@1754162.bs.iotleg.com>, <sip:fquinto-gmx.com-D5EA2023-44B4-4498-BCA4-8FF213BEC251@1754162.bs.iotleg.com>, <sip:albasanor-gmail.com-C3592C7D-BB5E-46A1-8647-2FE8371C0FE9@1754162.bs.iotleg.com>
 <sip:fquinto-gmx.com-A06CE9ED-19B2-4EDB-8CBB-A4EEB4F93BD2@1754162.bs.iotleg.com> <sip:sipserver.bs.iotleg.com;transport=tls>
@@ -68,24 +68,24 @@ bticino_bridge@1754162.bs.iotleg.com md5:2db500964b556d4cef79284738f2a360 ;  # �
 <sip:bticino_bridge@1754162.bs.iotleg.com> sip:127.0.0.1  # ← NUEVO
 ```
 
-**Nota**: `bticino_bridge` apunta a `127.0.0.1` porque corre en el mismo dispositivo.
+**Note**: `bticino_bridge` points to `127.0.0.1` because it runs on the same device.
 
 ---
 
 ### 3. `/etc/flexisip/users/route_int.conf`
 
-**Contenido**:
+**Contents**:
 ```
 <sip:baresip@1754162.bs.iotleg.com>, <sip:bticino_bridge@1754162.bs.iotleg.com>, <sip:alluser@1754162.bs.iotleg.com> <sip:fquinto-gmx.com-A06CE9ED-19B2-4EDB-8CBB-A4EEB4F93BD2@1754162.bs.iotleg.com>, <sip:fquinto-gmx.com-D5EA2023-44B4-4498-BCA4-8FF213BEC251@1754162.bs.iotleg.com>, <sip:albasanor-gmail.com-C3592C7D-BB5E-46A1-8647-2FE8371C0FE9@1754162.bs.iotleg.com>
 ```
 
-**Nota**: `bticino_bridge` ahora recibe llamadas de timbre (doorbell).
+**Note**: `bticino_bridge` now receives doorbell calls.
 
 ---
 
 ### 4. `/etc/flexisip/flexisip.conf`
 
-**Configuración actual**:
+**Current configuration**:
 ```ini
 [global]
 aliases=1754162.bs.iotleg.com
@@ -118,30 +118,30 @@ hashed-passwords=true
 reject-wrong-client-certificates=true
 ```
 
-**Puntos clave**:
-- ✅ `trusted-hosts=127.0.0.1,192.168.1.38` - Permite registro sin autenticación desde estas IPs
-- ✅ `log-level=debug` - Logs detallados en `/var/log/log_rotation.log`
-- ✅ `hashed-passwords=true` - Usa hashes MD5
+**Key points**:
+- ✅ `trusted-hosts=127.0.0.1,192.168.1.38` - Allows registration without authentication from these IPs
+- ✅ `log-level=debug` - Detailed logs in `/var/log/log_rotation.log`
+- ✅ `hashed-passwords=true` - Uses MD5 hashes
 
 ---
 
-## 🔧 Script de Inicio `/etc/init.d/flexisipsh`
+## 🔧 Startup Script `/etc/init.d/flexisipsh`
 
-**Línea de inicio**:
+**Startup line**:
 ```bash
 start-stop-daemon --start --quiet --exec $DAEMON -- $DAEMON_ARGS \
   --transports "sip:$2:5060;maddr=$2 sip:127.0.0.1:5060;maddr=127.0.0.1 sips:$2:5061;maddr=$2;require-peer-certificate=1"
 ```
 
-**Uso**:
+**Usage**:
 ```bash
-# Iniciar con IP específica
+# Start with a specific IP
 /etc/init.d/flexisipsh start 192.168.1.38
 
-# Detener
+# Stop
 /etc/init.d/flexisipsh stop
 
-# Reiniciar
+# Restart
 /etc/init.d/flexisipsh restart
 ```
 
@@ -149,57 +149,57 @@ start-stop-daemon --start --quiet --exec $DAEMON -- $DAEMON_ARGS \
 
 ## 🔥 Firewall
 
-**Estado**: Los scripts de iptables existen pero el comando `iptables` no está disponible en PATH.
+**Status**: the iptables scripts exist but the `iptables` command is not available in PATH.
 
 **Scripts**:
 - `/etc/network/if-pre-up.d/iptables` (1496 bytes)
 - `/etc/network/if-pre-up.d/iptables6` (1281 bytes)
 
-**Para deshabilitar firewall permanentemente**:
+**To permanently disable the firewall**:
 ```bash
 # Mover scripts a backup
 mv /etc/network/if-pre-up.d/iptables /home/bticino/cfg/extra/iptables.bak
 mv /etc/network/if-pre-up.d/iptables6 /home/bticino/cfg/extra/iptables6.bak
 ```
 
-**Nota**: El firewall parece estar deshabilitado o no funcional actualmente.
+**Note**: the firewall seems disabled or non-functional currently.
 
 ---
 
-## 🧪 Verificación
+## 🧪 Verification
 
-### 1. Verificar flexisip corriendo
+### 1. Check flexisip is running
 ```bash
 ssh bticino "ps aux | grep flexisip | grep -v grep"
 ```
 
-**Esperado**:
+**Expected**:
 ```
 root  18942  /usr/bin/flexisip --daemon --transports sip:192.168.1.38:5060;maddr=192.168.1.38 ...
 root  18943  /usr/bin/flexisip --daemon --transports sip:192.168.1.38:5060;maddr=192.168.1.38 ...
 ```
 
-### 2. Verificar puertos de escucha
+### 2. Check listening ports
 ```bash
 ssh bticino "cat /proc/net/tcp | grep -i '13c4\|13c5'"
 # 13C4 = 5060, 13C5 = 5061
 ```
 
-### 3. Verificar usuarios
+### 3. Check users
 ```bash
 ssh bticino "cat /etc/flexisip/users/users.db.txt"
 ```
 
-### 4. Verificar logs
+### 4. Check logs
 ```bash
 ssh bticino "tail -50 /var/log/log_rotation.log | grep flexisip"
 ```
 
 ---
 
-## 🔌 Configuración para bticino_bridge
+## 🔌 Configuration for bticino_bridge
 
-### Actualizar `config_streaming.yaml`:
+### Update `config_streaming.yaml`:
 
 ```yaml
 sip:
@@ -217,41 +217,41 @@ sip:
   insecure_tls: false
 ```
 
-**Notas**:
-- ✅ `server_host: 127.0.0.1` - Flexisip local
-- ✅ `username` incluye el dominio completo
-- ✅ `password` es el hash MD5 (no password plano)
-- ✅ `use_ha1: true` - Indica que password es hash HA1
+**Notes**:
+- ✅ `server_host: 127.0.0.1` - Local Flexisip
+- ✅ `username` includes the full domain
+- ✅ `password` is the MD5 hash (not a plain password)
+- ✅ `use_ha1: true` - Indicates the password is an HA1 hash
 
 ---
 
-## 📝 Comandos Útiles
+## 📝 Useful Commands
 
-### Reiniciar flexisip
+### Restart flexisip
 ```bash
 ssh bticino "/etc/init.d/flexisipsh restart"
 ```
 
-### Ver logs en tiempo real
+### Watch logs in real time
 ```bash
 ssh bticino "tail -f /var/log/log_rotation.log | grep flexisip"
 ```
 
-### Agregar nuevo usuario
+### Add new user
 ```bash
-# 1. Agregar a users.db.txt
+# 1. Add to users.db.txt
 echo 'nuevo_usuario@1754162.bs.iotleg.com md5:2db500964b556d4cef79284738f2a360 ;' >> /etc/flexisip/users/users.db.txt
 
-# 2. Agregar ruta
+# 2. Add route
 echo '<sip:nuevo_usuario@1754162.bs.iotleg.com> sip:192.168.1.XX' >> /etc/flexisip/users/route.conf
 
-# 3. Reiniciar flexisip
+# 3. Restart flexisip
 /etc/init.d/flexisipsh restart
 ```
 
-### Testear registro SIP
+### Test SIP registration
 ```bash
-# Desde otro dispositivo con baresip/softphone
+# From another device with baresip/softphone
 # Registrar: bticino_bridge@1754162.bs.iotleg.com
 # Password: 2db500964b556d4cef79284738f2a360
 # Server: 192.168.1.38:5060
@@ -259,37 +259,37 @@ echo '<sip:nuevo_usuario@1754162.bs.iotleg.com> sip:192.168.1.XX' >> /etc/flexis
 
 ---
 
-## 🎯 Próximos Pasos
+## 🎯 Next Steps
 
-1. ✅ **Flexisip configurado** - Escuchando en red local
-2. ✅ **Usuario bticino_bridge creado** - Con hash MD5
-3. ✅ **Ruta configurada** - Apunta a 127.0.0.1
-4. ✅ **Timbre configurado** - Recibe llamadas de doorbell
-5. ⏳ **Actualizar bticino_bridge** - Usar configuración local
-6. ⏳ **Testear registro SIP** - Verificar que bticino_bridge se registra
-7. ⏳ **Testear doorbell** - Verificar que recibe llamadas
+1. ✅ **Flexisip configured** - Listening on local network
+2. ✅ **bticino_bridge user created** - With MD5 hash
+3. ✅ **Route configured** - Points to 127.0.0.1
+4. ✅ **Doorbell configured** - Receives doorbell calls
+5. ⏳ **Update bticino_bridge** - Use local configuration
+6. ⏳ **Test SIP registration** - Verify bticino_bridge registers
+7. ⏳ **Test doorbell** - Verify it receives calls
 
 ---
 
 ## 🔐 Security Notes
 
-### **Contraseñas**:
-- Todos los usuarios locales usan el mismo hash: `2db500964b556d4cef79284738f2a360`
-- Este hash es para el dominio `1754162.bs.iotleg.com`
-- Formato: `username:realm:password` → MD5
+### **Passwords**:
+- All local users use the same hash: `2db500964b556d4cef79284738f2a360`
+- This hash is for the `1754162.bs.iotleg.com` domain
+- Format: `username:realm:password` → MD5
 
 ### **Trusted Hosts**:
 - `127.0.0.1` - localhost
-- `192.168.1.38` - IP del dispositivo
-- Hosts en trusted-hosts pueden registrarse sin autenticación
+- `192.168.1.38` - device IP
+- Hosts in trusted-hosts can register without authentication
 
-### **Recomendaciones**:
-- ✅ Usar solo en red local confiable
-- ✅ No exponer puertos SIP a Internet
-- ✅ Considerar TLS para producción (puerto 5061)
+### **Recommendations**:
+- ✅ Use only on a trusted local network
+- ✅ Do not expose SIP ports to the Internet
+- ✅ Consider TLS for production (port 5061)
 
 ---
 
-**Estado**: ✅ **COMPLETADO**  
-**Fecha**: 2026-03-24  
-**Prueba pendiente**: Registro de bticino_bridge con flexisip local
+**Status**: ✅ **COMPLETE**  
+**Date**: 2026-03-24  
+**Pending test**: bticino_bridge registration with local flexisip
